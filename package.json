@@ -1,5 +1,5 @@
 {
-  "name": "@finsweet/developer-starter",
+  "name": "@concypt/developer-starter",
   "version": "1.0.0",
   "description": "Developer starter template for Finsweet projects.",
   "homepage": "https://github.com/finsweet/developer-starter#readme",
@@ -17,8 +17,8 @@
     "url": "https://github.com/finsweet/developer-starter/issues"
   },
   "type": "module",
-  "main": "src/index.ts",
-  "module": "src/index.ts",
+  "main": "src/cms/populate-external-data/index.ts",
+  "module": "src/cms/populate-external-data/index.ts",
   "files": [
     "dist"
   ],
