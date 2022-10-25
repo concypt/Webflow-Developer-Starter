@@ -1,5 +1,6 @@
 //import { restartWebflow } from '@finsweet/ts-utils';
 import type { CMSList } from 'src/types/CMSList';
+
 import type { CMSFilters } from '../../types/CMSFilters';
 
 //import type { Product } from './types';
@@ -13,54 +14,65 @@ window.fsAttributes.push([
 
     // Get the list instance
     const { listInstance } = filtersInstance;
-
     if (!listInstance) return;
+
     // Get the filter criteria for completion dropdown
-
     const completionFilterCriterias = getFilterCriteria(listInstance, 'Completion');
+    if (!completionFilterCriterias) return;
 
-    console.log(completionFilterCriterias);
-
-    // Get the dropdown template element
+    // Get the dropdown template element for completion filter
     const filtersDropdownTemplateElement = filtersInstance.form.querySelector<HTMLSelectElement>(
       '[data-element="completion"]'
     );
-
     if (!filtersDropdownTemplateElement) return;
 
-    const filtersOptionTemplateElement = filtersDropdownTemplateElement.options[0];
+    // Populate options for completion dropdown inside dropdown template
+    populateOptions(filtersDropdownTemplateElement, completionFilterCriterias);
 
-    if (!filtersOptionTemplateElement) return;
+    // Get criteria for checkboxes for beds
+    const bedsCheckBoxOptions = getChecksCriteria(
+      listInstance,
+      'criteria-beds',
+      'min-beds',
+      'max-beds'
+    );
+    if (!bedsCheckBoxOptions) return;
 
-    // Remove existing options
-    const l = filtersDropdownTemplateElement.options.length - 1;
-    let i;
+    // Get the beds checkbox template element
+    const bedsFilterTemplateElement = filtersInstance.form.querySelector<HTMLLabelElement>(
+      '[data-element="beds-filter"]'
+    );
+    if (!bedsFilterTemplateElement) return;
 
-    for (i = l; i >= 1; i--) {
-      filtersDropdownTemplateElement.remove(i);
-    }
+    // Get the parent for beds checkbox
+    const bedsFilterParent = bedsFilterTemplateElement.parentElement;
+    if (!bedsFilterParent) return;
 
-    // Collect applicable dropdown options
-    const quaters = ['Q1 2023', 'Q2 2023', 'Q3 2023'];
+    // Remove beds filter template
+    bedsFilterTemplateElement.remove();
 
-    // Create new dropdown and append it in the parent wrapper
-    for (const quater of quaters) {
-      const newFilter = createFilter(quater, filtersOptionTemplateElement);
-      if (!newFilter) continue;
+    //
+    for (const bedsCheckBoxOption of bedsCheckBoxOptions) {
+      const bedsFilter = createCheckboxesFilter(bedsCheckBoxOption, bedsFilterTemplateElement);
+      if (!bedsFilter) continue;
 
-      filtersDropdownTemplateElement.append(newFilter);
+      bedsFilterParent.append(bedsFilter);
     }
 
     // Sync the CMSFilters instance to read the new filters data
+    const newListItems = listInstance.items.map((item) => item.element);
+    listInstance.clearItems;
+    listInstance.addItems(newListItems);
+
+    filtersInstance.storeFiltersData();
   },
 ]);
 
 /**
- * Creates a new radio filter from the template element.
- * @param category The filter value.
- * @param templateElement The template element.
- *
- * @returns A new category radio filter.
+ * Create and return new option.
+ * @param selectOption The select or dropdown option text / value.
+ * @param templateElement The template for the option.
+ * @returns The new option element.
  */
 const createFilter = (selectOption: string, templateElement: HTMLOptionElement) => {
   // Clone the template element
@@ -74,11 +86,10 @@ const createFilter = (selectOption: string, templateElement: HTMLOptionElement) 
 };
 
 /**
- * Get filter criteria values from CMSList
- * @param listInstance
- * @param filterValueSelector The template element.
- *
- * @returns Return array containing values.
+ * Get posible filter criteria values from the CMSList.
+ * @param listInstance The listInstance of CMSList.
+ * @param filterValueSelector The selector for inner element containing the values.
+ * @returns The new filter criteria as array.
  */
 const getFilterCriteria = (listInstance: CMSList, filterValueSelector: string) => {
   const newFilterCriteria = [];
@@ -87,63 +98,158 @@ const getFilterCriteria = (listInstance: CMSList, filterValueSelector: string) =
   if (!listInstance) return;
 
   for (const listInstanceItem of listInstanceItems) {
-
     const innerElement = listInstanceItem.element.querySelector<HTMLDivElement>(
       '[fs-cmsfilter-field="' + filterValueSelector + '"]'
     );
     if (!innerElement?.innerText) continue;
-    newFilterCriteria.push(dateToQuater(innerElement.innerText));
+    newFilterCriteria.push(innerElement.innerText);
   }
-  //const newFilterCriteria = listInstance.items;
 
   if (!newFilterCriteria) return;
   return newFilterCriteria;
 };
 
 /**
- * Convert dates to quarters
- * @param d Date
- *
- * @returns Quarter.
+ * Render new options in the dropdown.
+ * @param dropDownElement element in which options will be rendered.
+ * @param dropDownOptions options to be rendered.
  */
-const dateToQuater = (d: string) => {
-  const dateParts = d.split('-');
+const populateOptions = (dropDownElement: HTMLSelectElement, dropDownOptions: string[]) => {
+  const filtersOptionTemplateElement = dropDownElement.options[0];
 
-  const date = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-  let m = Math.floor(date.getMonth() / 3) + 1;
-  m -= m > 4 ? 4 : 0;
-  const y = date.getFullYear();
-  return 'Q' + m + ' ' + y;
+  if (!filtersOptionTemplateElement) return;
+
+  // Remove existing options
+  const optionsLength = dropDownElement.options.length - 1;
+  let i;
+
+  for (i = optionsLength; i >= 1; i--) {
+    dropDownElement.remove(i);
+  }
+
+  const finalDropDownOptions: string[] = [];
+  dropDownOptions.forEach((string) => {
+    !finalDropDownOptions.includes(string) && finalDropDownOptions.push(string);
+  });
+
+  for (const dropDownOption of finalDropDownOptions) {
+    const newFilter = createFilter(dropDownOption, filtersOptionTemplateElement);
+    if (!newFilter) continue;
+
+    dropDownElement.append(newFilter);
+  }
 };
 
 /**
- * Get filter criteria values from CMSList
- * @param listInstance
- * @param filterValueSelector The template element.
- *
- * @returns Return array containing values.
+ * For getting criteria from the list instance and return it in unique and sorted array
+ * @param listInstance The CMSList Instance
+ * @param filterValueSelector The filter criteria value selector
+ * @param filterMinSelector The minimum number
+ * @param filterMaxSelector The maximum number
+ * @returns The array containing all the values/options
  */
- const getFilterCriteria = (listInstance: CMSList, filterValueSelector: string) => {
-  const newFilterCriteria = [];
+const getChecksCriteria = (
+  listInstance: CMSList,
+  filterValueSelector: string,
+  filterMinSelector: string,
+  filterMaxSelector: string
+) => {
+  //const newChecksCriteria = [];
   const listInstanceItems = listInstance.items;
+  let rangeUnique: number[] = [];
 
   if (!listInstance) return;
 
   for (const listInstanceItem of listInstanceItems) {
-
-    const innerElement = listInstanceItem.element.querySelector<HTMLDivElement>(
-      '[fs-cmsfilter-field="' + filterValueSelector + '"]'
+    // Get min value
+    const minValue = listInstanceItem.element.querySelector<HTMLDivElement>(
+      '[data-element="' + filterMinSelector + '"]'
     );
-    if (!innerElement?.innerText) continue;
-    newFilterCriteria.push(dateToQuater(innerElement.innerText));
-  }
-  //const newFilterCriteria = listInstance.items;
+    if (!minValue) return;
+    const minInt = parseInt(minValue.innerText);
 
-  if (!newFilterCriteria) return;
-  return newFilterCriteria;
+    // Get max value
+    const maxValue = listInstanceItem.element.querySelector<HTMLDivElement>(
+      '[data-element="' + filterMaxSelector + '"]'
+    );
+    if (!maxValue) return;
+    const maxInt = parseInt(maxValue.innerText);
+
+    // Create array with min to max values
+    let range: number[] = [];
+    if (maxInt) {
+      range = Array.from({ length: maxInt - minInt + 1 }, (_, i) => minInt + i);
+      rangeUnique.push(...range);
+    } else {
+      range.push(minInt);
+      rangeUnique.push(...range);
+    }
+
+    // Clone element template for real element for filter
+    const criteriaDivElement = listInstanceItem.element.querySelector<HTMLDivElement>(
+      '[data-element="' + filterValueSelector + '"]'
+    );
+    if (!criteriaDivElement) return;
+
+    // Get parent element
+    const filterDivParentElement = criteriaDivElement.parentElement;
+    if (!filterDivParentElement) return;
+
+    // Remove existing element
+    criteriaDivElement.remove();
+
+    // Populate new elements inside parent
+    for (const option of range) {
+      const newCriteriaDiv = createFilterCriteriaDiv(option, criteriaDivElement);
+      if (!newCriteriaDiv) continue;
+
+      filterDivParentElement.append(newCriteriaDiv);
+    }
+  }
+
+  rangeUnique = rangeUnique.filter((v, i, a) => a.indexOf(v) === i);
+  rangeUnique = rangeUnique.sort(function (a, b) {
+    return a - b;
+  });
+
+  if (!rangeUnique) return;
+  return rangeUnique;
 };
 
-// window.Webflow ||= [];
-// window.Webflow.push(() => {
-//   restartWebflow();
-// });
+/**
+ * For creating criteria div element inside the list
+ * @param option The new criteria option
+ * @param templateElement The div for criteria option text
+ * @returns The div element for criteria option
+ */
+const createFilterCriteriaDiv = (option: number, templateElement: HTMLDivElement) => {
+  // Clone the template element
+  const newFilterCriteriaDiv = templateElement.cloneNode(true) as HTMLDivElement;
+
+  // Populate inner elements
+  newFilterCriteriaDiv.textContent = option.toString();
+  return newFilterCriteriaDiv;
+};
+
+/**
+ * Create checkbox for filters
+ * @param option The option for the checkbox
+ * @param templateElement The template for checkbox
+ * @returns The new checkbox
+ */
+const createCheckboxesFilter = (option: number, templateElement: HTMLLabelElement) => {
+  // Clone the template element
+  const newCheckbox = templateElement.cloneNode(true) as HTMLLabelElement;
+
+  // Query inner elements
+  const label = newCheckbox.querySelector('span');
+  const check = newCheckbox.querySelector('input');
+
+  if (!label || !check) return;
+
+  // Populate inner elements
+  label.textContent = option.toString();
+  check.value = option.toString();
+
+  return newCheckbox;
+};
