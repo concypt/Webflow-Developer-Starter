@@ -38,25 +38,55 @@ window.fsAttributes.push([
     );
     if (!bedsCheckBoxOptions) return;
 
+    // Get criteria for checkboxes for baths
+    const bathsCheckBoxOptions = getChecksCriteria(
+      listInstance,
+      'criteria-baths',
+      'min-baths',
+      'max-baths'
+    );
+    if (!bathsCheckBoxOptions) return;
+
     // Get the beds checkbox template element
     const bedsFilterTemplateElement = filtersInstance.form.querySelector<HTMLLabelElement>(
       '[data-element="beds-filter"]'
     );
     if (!bedsFilterTemplateElement) return;
 
+    // Get the baths checkbox template element
+    const bathsFilterTemplateElement = filtersInstance.form.querySelector<HTMLLabelElement>(
+      '[data-element="baths-filter"]'
+    );
+    if (!bathsFilterTemplateElement) return;
+
     // Get the parent for beds checkbox
     const bedsFilterParent = bedsFilterTemplateElement.parentElement;
     if (!bedsFilterParent) return;
 
+    // Get the parent for beds checkbox
+    const bathsFilterParent = bathsFilterTemplateElement.parentElement;
+    if (!bathsFilterParent) return;
+
     // Remove beds filter template
     bedsFilterTemplateElement.remove();
 
-    //
+    // Remove baths filter template
+    bathsFilterTemplateElement.remove();
+
+    // Add Beds checkbox into the parent
     for (const bedsCheckBoxOption of bedsCheckBoxOptions) {
       const bedsFilter = createCheckboxesFilter(bedsCheckBoxOption, bedsFilterTemplateElement);
       if (!bedsFilter) continue;
 
       bedsFilterParent.append(bedsFilter);
+    }
+
+    // Add Baths checkbox into the parent
+    for (const bathsCheckBoxOption of bathsCheckBoxOptions) {
+      const bathsFilter = createCheckboxesFilter(bathsCheckBoxOption, bathsFilterTemplateElement);
+      if (!bathsFilter) continue;
+
+      bathsFilterParent.append(bathsFilter);
     }
 
     // Sync the CMSFilters instance to read the new filters data
