@@ -8,12 +8,12 @@ import type { CMSFilters } from '../../types/CMSFilters';
 window.fsAttributes = window.fsAttributes || [];
 window.fsAttributes.push([
   'cmsfilter',
-  async (filtersInstances: CMSFilters[]) => {
+  async (filterInstances: CMSFilters[]) => {
     // Get the filters instance
-    const [filtersInstance] = filtersInstances;
+    const [filterInstance] = filterInstances;
 
     // Get the list instance
-    const { listInstance } = filtersInstance;
+    const { listInstance } = filterInstance;
     if (!listInstance) return;
 
     // Get the filter criteria for completion dropdown
@@ -21,13 +21,34 @@ window.fsAttributes.push([
     if (!completionFilterCriterias) return;
 
     // Get the dropdown template element for completion filter
-    const filtersDropdownTemplateElement = filtersInstance.form.querySelector<HTMLSelectElement>(
+    const filtersDropdownTemplateElement = filterInstance.form.querySelector<HTMLSelectElement>(
       '[data-element="completion"]'
     );
     if (!filtersDropdownTemplateElement) return;
 
     // Populate options for completion dropdown inside dropdown template
     populateOptions(filtersDropdownTemplateElement, completionFilterCriterias);
+
+    // Increments of $100k, starting from $400,000 all the way to $1,500,000
+    const priceFilterCriterias: string[] = [];
+    for (let i = 400000; i <= 1500000; i = i + 100000) {
+      priceFilterCriterias.push(i.toString());
+    }
+    if (!priceFilterCriterias) return;
+
+    // Get the dropdown template element for price filter
+    const priceMinDropdownTemplateElement = filterInstance.form.querySelector<HTMLSelectElement>(
+      '[data-element="price-dropdown-min"]'
+    );
+    if (!priceMinDropdownTemplateElement) return;
+    const priceMaxDropdownTemplateElement = filterInstance.form.querySelector<HTMLSelectElement>(
+      '[data-element="price-dropdown-max"]'
+    );
+    if (!priceMaxDropdownTemplateElement) return;
+
+    //  // Populate options for price dropdown inside dropdown template
+    populateOptions(priceMinDropdownTemplateElement, priceFilterCriterias);
+    populateOptions(priceMaxDropdownTemplateElement, priceFilterCriterias);
 
     // Get criteria for checkboxes for beds
     const bedsCheckBoxOptions = getChecksCriteria(
@@ -48,13 +69,13 @@ window.fsAttributes.push([
     if (!bathsCheckBoxOptions) return;
 
     // Get the beds checkbox template element
-    const bedsFilterTemplateElement = filtersInstance.form.querySelector<HTMLLabelElement>(
+    const bedsFilterTemplateElement = filterInstance.form.querySelector<HTMLLabelElement>(
       '[data-element="beds-filter"]'
     );
     if (!bedsFilterTemplateElement) return;
 
     // Get the baths checkbox template element
-    const bathsFilterTemplateElement = filtersInstance.form.querySelector<HTMLLabelElement>(
+    const bathsFilterTemplateElement = filterInstance.form.querySelector<HTMLLabelElement>(
       '[data-element="baths-filter"]'
     );
     if (!bathsFilterTemplateElement) return;
@@ -91,13 +112,108 @@ window.fsAttributes.push([
 
     // Sync the CMSFilters instance to read the new filters data
     const newListItems = listInstance.items.map((item) => item.element);
-    listInstance.clearItems;
+    listInstance.clearItems();
     listInstance.addItems(newListItems);
 
-    filtersInstance.storeFiltersData();
+    filterInstance.storeFiltersData();
+
+    const minPriceSelect = document.querySelector('#min-price');
+    if (!minPriceSelect) return;
+    const maxPriceSelect = document.querySelector('#max-price');
+    if (!maxPriceSelect) return;
+
+    minPriceSelect.addEventListener('change', (event) => {
+      const eventTarget = (event.target as HTMLSelectElement).value;
+      if (!eventTarget) return;
+      console.log(eventTarget);
+
+      document.querySelectorAll('#max-price option').forEach((opt) => {
+        opt.style.display = 'block';
+      });
+      document.querySelectorAll('#max-price option').forEach((opt) => {
+        if (Number(opt.value) <= Number(eventTarget)) {
+          opt.style.display = 'none';
+        }
+      });
+      filterPrice();
+    });
+    maxPriceSelect.addEventListener('change', (event) => {
+      filterPrice();
+    });
+
+    const filterPrice = () => {
+      listInstance.clearItems();
+      listInstance.addItems(newListItems);
+      const changedListItems = applyPriceFilter(listInstance);
+      if (!changedListItems) return;
+      //console.log(changedListItems);
+      listInstance.clearItems();
+      listInstance.addItems(changedListItems);
+    };
   },
 ]);
+/**
+ * Apply custom price range filter
+ * @param listInstance The listInstance
+ * @returns The modified listInstance item elements
+ */
+const applyPriceFilter = (listInstance: CMSList) => {
+  const minRange = Number(
+    document.querySelector<HTMLSelectElement>('#min-price')?.value.replace(/,/g, '')
+  );
+  if (!minRange) return;
 
+  const maxRange = Number(
+    document.querySelector<HTMLSelectElement>('#max-price')?.value.replace(/,/g, '')
+  );
+  if (!maxRange) return;
+
+  const newListItems = listInstance.items.filter((item) => {
+    // Get current item's min max price
+    const itemMinPrice = Number(
+      item.element
+        .querySelector<HTMLDivElement>('[data-element="min-price"]')
+        ?.innerText.replace(/,/g, '')
+    );
+    if (!itemMinPrice) return;
+    const itemMaxPrice = Number(
+      item.element
+        .querySelector<HTMLDivElement>('[data-element="max-price"]')
+        ?.innerText.replace(/,/g, '')
+    );
+
+    // console.log('min range: ' + minRange);
+    // console.log('max ramge: ' + maxRange);
+    // console.log('Item min price: ' + itemMinPrice);
+    // console.log('Item max price: ' + itemMaxPrice);
+
+    if (itemMaxPrice) {
+      //console.log('item is a range');
+      // minRange 500000 - maxRange 900000
+      // price 649  - 899
+      // check if min price is more then equal to min range
+      // check if max price is less then equal to max range
+      if (itemMinPrice >= minRange && itemMaxPrice <= maxRange) {
+        //console.log('min max within the range');
+        return true;
+      }
+    } else {
+      //console.log('item is not a range');
+      // check if min price big from min and less from max
+      if (itemMinPrice >= minRange && itemMinPrice <= maxRange) {
+        //console.log('min within the range');
+        return true;
+      }
+    }
+    return;
+  });
+  return newListItems.map((item) => item.element);
+};
+
+//dropdown on change trigger a function
+//get changed value
+//each lop on listInstance
+//
 /**
  * Create and return new option.
  * @param selectOption The select or dropdown option text / value.

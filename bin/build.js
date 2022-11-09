@@ -5,7 +5,10 @@ const buildDirectory = 'dist';
 const production = process.env.NODE_ENV === 'production';
 
 // Config entrypoint files
-const entryPoints = ['src/cms/populate-external-data/index.ts'];
+const entryPoints = [
+  'src/cms/populate-external-data/index.ts',
+  'src/cms/populate-external-data/airtable.ts',
+];
 
 /**
  * Default Settings
