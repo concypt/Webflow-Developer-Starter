@@ -20,6 +20,10 @@ getPropertyData(tableName).then((data) => processData(data));
  */
 const processData = (data: any) => {
   const dataRecords = data['records'];
+  //Unit string to Unit integer in data
+  dataRecords.forEach(obj => {
+    obj.fields.Unit = parseInt(obj.fields.Unit); // use `+` to convert your string to a number
+  });
 
   // clone table row element template
   const rowElementTemplate = document.querySelector<HTMLDivElement>(
@@ -138,6 +142,7 @@ const sortData = (data: any, sortByField: string, sortOrder: string) => {
   if (!sortType) return;
   const sortedData = data.slice(0);
   if (sortType === 'number') {
+    console.log('number');
     sortedData.sort(function (a: any, b: any) {
       let rValue;
       if (sortOrder === 'desc') {
@@ -149,6 +154,7 @@ const sortData = (data: any, sortByField: string, sortOrder: string) => {
     });
     //console.log('by date:');
   } else if (sortType === 'string' || sortType === 'Default') {
+    console.log('string');
     sortedData.sort(function (a: any, b: any) {
       const x = a.fields[sortByField].toLowerCase();
       const y = b.fields[sortByField].toLowerCase();

@@ -8,6 +8,7 @@ const production = process.env.NODE_ENV === 'production';
 const entryPoints = [
   'src/cms/populate-external-data/index.ts',
   'src/cms/populate-external-data/airtable.ts',
+  'src/cms/populate-external-data/request-a-contract.ts',
 ];
 
 /**
