@@ -131,12 +131,7 @@ function initAddy() {
   d.body.appendChild(s);
 })(document, window);
 
-// Create Radios for lawyers
-const lawyerDataElement = document.querySelectorAll('[data-element="Lawyer Item"]');
-const radioElementTemplate = document.querySelector<HTMLLabelElement>('[data-element="Radio"]');
-const radioElementParent = radioElementTemplate?.parentElement;
-radioElementTemplate?.remove();
-//if (!radioElementTemplate) return;
+// Create Radios for lawyers and mortgage brokers
 
 const createRadioElement = (
   radioElementTemplate: HTMLLabelElement,
@@ -156,108 +151,91 @@ const createRadioElement = (
   radioInput.value = radioValue.toString();
   return newRadio;
 };
+const renderRadio = (
+  dataElement: NodeList,
+  radioElementTemplate: HTMLLabelElement,
+  radioType: string
+) => {
+  const radioElementParent = radioElementTemplate?.parentElement;
+  radioElementTemplate?.remove();
 
-lawyerDataElement.forEach((value, key, array) => {
-  const lawyerText =
-    'Yes - ' +
-    value.querySelector('[data-element="Lawyer Location"]')?.textContent +
-    ': ' +
-    value.querySelector('[data-element="Lawyer Name"]')?.textContent +
-    ' at ' +
-    value.querySelector('[data-element="Lawyer Firm"]')?.textContent +
-    ' (' +
-    value.querySelector('[data-element="Lawyer Email"]')?.textContent +
-    ' / ' +
-    value.querySelector('[data-element="Lawyer Phone"]')?.textContent +
-    ' )';
-  const lawyerValue =
-    value.querySelector('[data-element="Lawyer Location"]')?.textContent +
-    ': ' +
-    value.querySelector('[data-element="Lawyer Name"]')?.textContent +
-    ' at ' +
-    value.querySelector('[data-element="Lawyer Firm"]')?.textContent;
+  console.log(radioType);
+  dataElement.forEach((value, key, array) => {
+    const valuElement = value as HTMLDivElement;
+    const radioText =
+      'Yes - ' +
+      valuElement.querySelector('[data-element="' + radioType + ' Location"]')?.textContent +
+      (radioType !== 'Lawyer' ? ' ' : ': ') +
+      valuElement.querySelector('[data-element="' + radioType + ' Name"]')?.textContent +
+      ' at ' +
+      valuElement.querySelector('[data-element="' + radioType + ' Firm"]')?.textContent +
+      ' (' +
+      valuElement.querySelector('[data-element="' + radioType + ' Email"]')?.textContent +
+      ' / ' +
+      valuElement.querySelector('[data-element="' + radioType + ' Phone"]')?.textContent +
+      ' )';
+    const radioValue =
+      valuElement.querySelector('[data-element="' + radioType + ' Location"]')?.textContent +
+      ': ' +
+      valuElement.querySelector('[data-element="' + radioType + ' Name"]')?.textContent +
+      ' at ' +
+      valuElement.querySelector('[data-element="' + radioType + ' Firm"]')?.textContent;
 
-  if (radioElementTemplate) {
-    const newRadioElement = createRadioElement(radioElementTemplate, lawyerText, lawyerValue);
-    if (newRadioElement) radioElementParent?.append(newRadioElement);
+    if (radioElementTemplate) {
+      const newRadioElement = createRadioElement(radioElementTemplate, radioText, radioValue);
 
-    if (key === array.length - 1) {
-      const lastRadioElement = createRadioElement(
-        radioElementTemplate,
-        'No - please fill in purchaser solicitors section below',
-        'No'
-      );
-      if (lastRadioElement) radioElementParent?.append(lastRadioElement);
+      if (newRadioElement) radioElementParent?.append(newRadioElement);
+
+      if (key === array.length - 1) {
+        let lastRadioElement;
+        if (radioType === 'Lawyer') {
+          lastRadioElement = createRadioElement(
+            radioElementTemplate,
+            'No - please fill in purchaser solicitors section below',
+            'Custom Lawyer'
+          );
+        } else {
+          lastRadioElement = createRadioElement(
+            radioElementTemplate,
+            'No - please fill in purchaser broker section below',
+            'Custom Broker'
+          );
+        }
+
+        if (lastRadioElement) radioElementParent?.append(lastRadioElement);
+        const firstRadio = radioElementParent?.querySelector('.w-form-formradioinput:first-child');
+        if (firstRadio) (firstRadio as HTMLInputElement).checked = true;
+      }
+    }
+  });
+};
+
+const lawyerDataElement = document.querySelectorAll('[data-element="Lawyer Item"]');
+const lawyerRadioTemplate = document.querySelector<HTMLLabelElement>(
+  '[data-element="Lawyer Radio"]'
+);
+if (lawyerRadioTemplate) renderRadio(lawyerDataElement, lawyerRadioTemplate, 'Lawyer');
+
+const brokerDataElement = document.querySelectorAll('[data-element="Broker Item"]');
+const brokerRadioTemplate = document.querySelector<HTMLLabelElement>(
+  '[data-element="Broker Radio"]'
+);
+if (brokerRadioTemplate) renderRadio(brokerDataElement, brokerRadioTemplate, 'Broker');
+
+document.addEventListener('click', function (e) {
+  const targetElement = e.target as HTMLInputElement;
+  if (targetElement.classList.contains('lawyer-radio')) {
+    if (targetElement.value === 'Custom Lawyer') {
+      document.querySelector('[data-element="Custom Lawyer"]')?.classList.remove('hide');
+    } else {
+      document.querySelector('[data-element="Custom Lawyer"]')?.classList.add('hide');
+    }
+  }
+  if (targetElement.classList.contains('broker-radio')) {
+    if (targetElement.value === 'Custom Broker') {
+      document.querySelector('[data-element="Custom Broker"]')?.classList.remove('hide');
+    } else {
+      document.querySelector('[data-element="Custom Broker"]')?.classList.add('hide');
     }
   }
 });
-// const lastRadio = radioElementTemplate?.cloneNode(true) as HTMLLabelElement;
-
-// // Query inner elements
-// const lastLabel = lastRadio.querySelector('span');
-// const lastRadioInput = lastRadio.querySelector('input');
-// if (!lastLabel || !lastRadioInput) return;
-// lastLabel.textContent = 'No - please fill in purchaser solicitors section below';
-// lastRadioInput.value = 'No';
-// radioElementParent?.append(lastRadio);
-//}
-
-// //   DOM elements
-// const searchInput = document.querySelector('[data-element="Listing"]');
-// const suggestions = document.querySelector('[data-element="Suggestions"]');
-
-// // Event listeners
-// searchInput?.addEventListener('change', displayMatches);
-// searchInput?.addEventListener('keyup', displayMatches);
-
-// document.addEventListener('click', function (e) {
-//   console.log('clicked');
-//   const targetElement = e.target as Element;
-//   if (targetElement.classList.contains('property-name')) {
-//     if (suggestions) suggestions.innerHTML = '';
-//     if (searchInput && targetElement.textContent)
-//       (searchInput as HTMLInputElement).value = targetElement.textContent;
-//   }
-// });
-
-// // function selectProperty(e: Event) {
-// // }
-
-// function findMatches(wordToMatch: string, properties: string[]) {
-//   // use filter function
-//   return properties.filter((property) => {
-//     // here we need to figure out if the city or state matches what was searched
-//     //         return  property.state.match/wordToMatch/i) // Well this syntax won't work with variables
-//     const regex = new RegExp(wordToMatch, 'gi'); //g = global, i = insensitive
-//     return property.match(regex);
-//   });
-// }
-
-// // Display matches
-// function displayMatches(e: Event) {
-//   //    console(this.value)
-//   const inputValue = (e.target as HTMLInputElement).value;
-//   if (inputValue.trim() === '') {
-//     if (suggestions) suggestions.innerHTML = '';
-//     return;
-//   }
-//   // Get your data first, then worry about the rest.
-//   const matchArray = findMatches(inputValue, properties);
-//   // console.log(matchArray)
-//   // Build your html
-//   const html = matchArray
-//     .map((property) => {
-//       const regex = new RegExp(inputValue, 'gi');
-//       // Use replace() and template literals to change the found word to new dom element function and pick up highlighted styles
-//       const propertyName = property.replace(regex, `<span class="hl">${inputValue}</span>`);
-//       // Use template literals. Newlines and spaces are added. Use ${} to execute variables or functions
-//       // You couls skip the above and just return `<li><span class="population">${place.population}</span></li>` to test
-//       return `
-//       <li>
-//         <span class="property-name">${propertyName}</span>
-//       </li>
-//       `;
-//     })
-//     .join(''); // map returns an array, so do this to turn it into a string
-//   if (suggestions) suggestions.innerHTML = html;
-// }
