@@ -1,4 +1,5 @@
 //const tableName = encodeURI('24 Devonport lane - growcott freer');
+import { removeChildElements } from "@finsweet/ts-utils";
 
 declare const tableName: string;
 //console.log(tableName);
@@ -20,9 +21,32 @@ getPropertyData(tableName).then((data) => processData(data));
  */
 const processData = (data: any) => {
   const dataRecords = data['records'];
-  //Unit string to Unit integer in data
+  //console.log(dataRecords);
   dataRecords.forEach(obj => {
-    obj.fields.Unit = parseInt(obj.fields.Unit); // use `+` to convert your string to a number
+    if (obj.fields['Unit/Lot']) obj.fields['Unit/Lot'] = parseInt(obj.fields['Unit/Lot']); // use `+` to convert your string to a number
+    if (obj.fields.Price) obj.fields.Price = '$' + numberWithCommas(obj.fields.Price);
+  });
+  console.log(dataRecords);
+  //Get headers for columns
+  const dataFirstRow = dataRecords[0].fields;
+  const colHeaders = Object.keys(dataFirstRow);
+
+  //Get/Set tableRowElement
+  const tableHeaderRow = document.querySelector<HTMLDivElement>('[data-element="table-row"]');
+  const tableHeaderCell = tableHeaderRow?.firstChild;
+  if (tableHeaderRow?.innerHTML) tableHeaderRow.innerHTML = '';
+
+  let styleString = 'grid-template-columns: ';
+  colHeaders.forEach((value) => {
+    const newColHeader = tableHeaderCell?.cloneNode(true) as HTMLDivElement;
+    newColHeader.textContent = value;
+    newColHeader.setAttribute('data-sortelement', value);
+    tableHeaderRow?.append(newColHeader);
+    styleString = styleString + '1fr ';
+  });
+
+  document.querySelectorAll('.s-table-row-inner').forEach((value) => {
+    value.setAttribute('style', styleString);
   });
 
   // clone table row element template
@@ -35,7 +59,7 @@ const processData = (data: any) => {
   const rowParentElement = rowElementTemplate?.parentElement;
   if (!rowParentElement) return;
 
-  renderTable(dataRecords, rowElementTemplate, rowParentElement, 'Defualt', 'Defualt');
+  renderTable(dataRecords, rowElementTemplate, rowParentElement, 'Unit/Lot', 'asc', colHeaders);
 
   const tableHeaders = document.querySelectorAll('.s-table-head-item');
   tableHeaders.forEach((node) => {
@@ -53,7 +77,8 @@ const processData = (data: any) => {
           rowElementTemplate,
           rowParentElement,
           node.dataset.sortelement,
-          'asc'
+          'asc',
+          colHeaders
         );
         node.classList.add('selected', 'asc');
         node.classList.remove('desc');
@@ -63,7 +88,8 @@ const processData = (data: any) => {
           rowElementTemplate,
           rowParentElement,
           node.dataset.sortelement,
-          'desc'
+          'desc',
+          colHeaders
         );
         if (!node.classList.contains('first')) {
           node.classList.add('selected', 'desc');
@@ -79,7 +105,8 @@ const renderTable = (
   rowElementTemplate: HTMLDivElement,
   rowParentElement: HTMLElement,
   sortByField: string,
-  sortOrder: string
+  sortOrder: string,
+  colHeaders: string[]
 ) => {
   // remove rows from parent
   rowParentElement.innerHTML = '';
@@ -92,7 +119,7 @@ const renderTable = (
   for (const key in sortedDataRecords) {
     if (sortedDataRecords.hasOwnProperty(key)) {
       const dataRecord = sortedDataRecords[key]['fields'];
-      const newRow = createRow(rowElementTemplate, dataRecord);
+      const newRow = createRow(rowElementTemplate, dataRecord, colHeaders);
       if (!newRow) return;
       if (even) newRow.classList.add('colored');
       even = !even;
@@ -107,28 +134,24 @@ const renderTable = (
  * @param rowData
  * @returns
  */
-const createRow = (rowTemplate: HTMLDivElement, rowData: any) => {
+const createRow = (rowTemplate: HTMLDivElement, rowData: any, colHeaders: string[]) => {
   const newItem = rowTemplate.cloneNode(true) as HTMLDivElement;
+  const tableCell = newItem.querySelector('.s-table-cell-item');
+  const tableCellContainer = tableCell?.parentElement;
+  if (!tableCellContainer) return;
 
-  const address = newItem.querySelector<HTMLDivElement>('[data-element="address"]');
-  const unit = newItem.querySelector<HTMLDivElement>('[data-element="unit"]');
-  const price = newItem.querySelector<HTMLDivElement>('[data-element="price"]');
-  const beds = newItem.querySelector<HTMLDivElement>('[data-element="beds"]');
-  const baths = newItem.querySelector<HTMLDivElement>('[data-element="baths"]');
-  const carpark = newItem.querySelector<HTMLDivElement>('[data-element="carpark"]');
-  const status = newItem.querySelector<HTMLDivElement>('[data-element="status"]');
-  const internal = newItem.querySelector<HTMLDivElement>('[data-element="internal"]');
-  const external = newItem.querySelector<HTMLDivElement>('[data-element="external"]');
+  if (!tableCell) return;
 
-  if (address) address.textContent = rowData['Unit/Lot Number and Address'];
-  if (unit) unit.textContent = rowData['Unit'];
-  if (price) price.textContent = rowData['Price'];
-  if (beds) beds.textContent = rowData['Beds'];
-  if (baths) baths.textContent = rowData['Baths'];
-  if (carpark) carpark.textContent = rowData['Car Park'];
-  if (status) status.textContent = rowData['Status'];
-  if (internal) internal.textContent = rowData['Internal'];
-  if (external) external.textContent = rowData['Land Size'];
+  tableCellContainer.innerHTML = '';
+  newItem.innerHTML = '';
+
+  colHeaders.forEach((value) => {
+    const newTableCell = tableCell.cloneNode(true) as HTMLDivElement;
+    newTableCell.setAttribute('data-element', value);
+    newTableCell.textContent = rowData[value];
+    tableCellContainer.append(newTableCell);
+  });
+  newItem.append(tableCellContainer);
 
   return newItem;
 };
@@ -143,6 +166,7 @@ const sortData = (data: any, sortByField: string, sortOrder: string) => {
   const sortedData = data.slice(0);
   if (sortType === 'number') {
     console.log('number');
+    console.log(data);
     sortedData.sort(function (a: any, b: any) {
       let rValue;
       if (sortOrder === 'desc') {
@@ -171,3 +195,7 @@ const sortData = (data: any, sortByField: string, sortOrder: string) => {
   //console.log(sortedData);
   return sortedData;
 };
+
+function numberWithCommas(x: string | number) {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}

@@ -1,4 +1,6 @@
-import autoComplete from '@tarekraafat/autocomplete.js';
+// import autoComplete from 'src/thirdparty/autocomplete.js';
+declare const autoComplete: any;
+declare const AddyComplete: any;
 
 // Show / Hide Purchaser 2 based on Joint or Singl
 const purchaserSelect = document.querySelector('[data-element="Purchaser"]');
@@ -15,7 +17,7 @@ const buyingEntityTypeSelect = document.querySelector('[data-element="Buying Ent
 buyingEntityTypeSelect?.addEventListener('change', (e: Event) => {
   e.preventDefault();
   const thisValue = (e.target as HTMLSelectElement).value;
-  console.log(thisValue);
+  //console.log(thisValue);
   const buyingEntityNameElement = document.querySelector('[data-element="Buying Entity Name"]');
   if (thisValue !== 'Named above') buyingEntityNameElement?.classList.remove('hide');
   if (thisValue === 'Named above' || thisValue === '')
@@ -27,7 +29,7 @@ const properties: string[] = [];
 document.querySelectorAll('.property-list-item').forEach((value: Element) => {
   if (value.textContent) properties.push(value.textContent);
 });
-
+//console.log(properties)
 // Create autoComplete instance
 const autoCompleteJS = new autoComplete({
   placeHolder: 'Search for listing...',
@@ -78,19 +80,19 @@ const processData = (data: any) => {
   }
 
   const dataRecords = data['records'];
-  console.log(dataRecords);
+  //console.log(dataRecords);
   //Unit string to Unit integer in data
   const dataUnits: string[] = [];
 
-  dataRecords.forEach((obj) => {
+  dataRecords.forEach((obj: any) => {
     const newText =
       'Unit ' +
-      obj.fields.Unit +
+      obj.fields['Unit/Lot'] +
       ' - $' +
-      obj.fields.Price +
+      numberWithCommas(obj.fields.Price) +
       ' / ' +
-      obj.fields.Land +
-      'sqm / ' +
+      (obj.fields.Land ? obj.fields.Land : '') +
+      (obj.fields.Land ? 'sqm / ' : '') +
       obj.fields.Beds +
       ' / ' +
       obj.fields.Baths +
@@ -98,7 +100,9 @@ const processData = (data: any) => {
       obj.fields['Car Park'];
     dataUnits.push(newText); // use `+` to convert your string to a number
   });
-  dataUnits.sort();
+  dataUnits.sort(naturalCompare);
+
+  console.log(dataUnits);
   dataUnits.forEach((unit) => {
     const newOption = document.createElement('option');
     newOption.text = unit + '';
@@ -159,7 +163,7 @@ const renderRadio = (
   const radioElementParent = radioElementTemplate?.parentElement;
   radioElementTemplate?.remove();
 
-  console.log(radioType);
+  //console.log(radioType);
   dataElement.forEach((value, key, array) => {
     const valuElement = value as HTMLDivElement;
     const radioText =
@@ -239,3 +243,23 @@ document.addEventListener('click', function (e) {
     }
   }
 });
+
+function numberWithCommas(x: string | number) {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function naturalCompare(a, b) {
+  var ax = [], bx = [];
+
+  a.replace(/(\d+)|(\D+)/g, function(_, $1, $2) { ax.push([$1 || Infinity, $2 || ""]) });
+  b.replace(/(\d+)|(\D+)/g, function(_, $1, $2) { bx.push([$1 || Infinity, $2 || ""]) });
+  
+  while(ax.length && bx.length) {
+      var an = ax.shift();
+      var bn = bx.shift();
+      var nn = (an[0] - bn[0]) || an[1].localeCompare(bn[1]);
+      if(nn) return nn;
+  }
+
+  return ax.length - bx.length;
+}
