@@ -1,12 +1,101 @@
 //const tableName = encodeURI('24 Devonport lane - growcott freer');
 import { removeChildElements } from "@finsweet/ts-utils";
+console.log('doc');
+
+//script for protecting the page
+const memberstack = window.$memberstackDom;
+const thisListing = window.location.href.split('/').pop();
+
+memberstack.getCurrentMember().then(({ data: member }) => {
+  if (!member) {
+    protectPage();
+  }
+});
+
+const protectPage = () => {
+  let redirect = true;
+  const reffererName = document.referrer.split('/').pop();
+
+  const reffererCollectionItems = document.querySelectorAll('[data-element="refferer-item"]');
+  if (!reffererCollectionItems) return;
+
+  reffererCollectionItems.forEach((value) => {
+    const name = value.querySelector('[data-element="refferer-name"]')?.textContent;
+    const listing = value.querySelector('[data-element="refferer-listing"]')?.textContent;
+    if (name === reffererName && listing === thisListing) {
+      redirect = false;
+    }
+  });
+  if (redirect) window.location.href = '/';
+};
+//end script for protecting the page
+
+//Scrtipt for sharing the URL
+const shareSlug = createString(21);
+const newURL = 'https://' + window.location.hostname + '/fdiautvtnzxynmp/' + shareSlug;
+const inputURL = document.querySelector<HTMLInputElement>('#input-url');
+const inputShareSlug = document.querySelector<HTMLInputElement>('#input-share-slug');
+const inputListing = document.querySelector<HTMLInputElement>('#input-listing');
+
+if (inputURL) inputURL.value = newURL;
+if (inputShareSlug) inputShareSlug.value = shareSlug;
+if (inputListing && thisListing) inputListing.value = thisListing;
+
+function fallbackCopyTextToClipboard(text: string) {
+  const textArea = document.createElement('textarea');
+  textArea.value = text;
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+
+  try {
+    document.execCommand('copy');
+  } catch (err) {
+    console.error('Fallback: Oops, unable to copy', err);
+  }
+
+  document.body.removeChild(textArea);
+}
+function copyTextToClipboard(text: string) {
+  if (!navigator.clipboard) {
+    fallbackCopyTextToClipboard(text);
+    return;
+  }
+  navigator.clipboard.writeText(text).then(
+    function () {
+      //success
+    },
+    function (err) {
+      //err
+      console.log(err);
+    }
+  );
+}
+
+const btnCopyURL = document.querySelector('#btn-copy-url');
+
+btnCopyURL?.addEventListener('click', function (event) {
+  copyTextToClipboard(newURL);
+});
+
+function createString(length: number) {
+  let result = '';
+  const characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const charactersLength = characters.length;
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
+}
+
+//end Script for sharing the URL
 
 declare const tableName: string;
 //console.log(tableName);
 
 async function getPropertyData(tableName: string) {
   const tableURL =
-    'https://api.airtable.com/v0/appWNf6XfqAR6n0oT/' + tableName + '?api_key=keyUxdcC40qxNrt1Y';
+    'https://api.airtable.com/v0/appWNf6XfqAR6n0oT/' + tableName + '?api_key=keyUxdcC40qxNrt1Y&view=Website+View';
   const response = await fetch(tableURL);
   const responseJson = await response.json();
   return responseJson;
@@ -26,10 +115,16 @@ const processData = (data: any) => {
     if (obj.fields['Unit/Lot']) obj.fields['Unit/Lot'] = parseInt(obj.fields['Unit/Lot']); // use `+` to convert your string to a number
     if (obj.fields.Price) obj.fields.Price = '$' + numberWithCommas(obj.fields.Price);
   });
-  console.log(dataRecords);
+
   //Get headers for columns
   const dataFirstRow = dataRecords[0].fields;
-  const colHeaders = Object.keys(dataFirstRow);
+  const foundHeaders = Object.keys(dataFirstRow);
+  const colHeaders = ['Unit/Lot', 'Price', 'Beds', 'Baths', 'Car Park', 'Status', 'Internal'];
+  const difference = foundHeaders.filter((x) => colHeaders.indexOf(x) === -1);
+
+  difference.forEach((item) => {
+    if (item !== 'Discount') colHeaders.push(item);
+  });
 
   //Get/Set tableRowElement
   const tableHeaderRow = document.querySelector<HTMLDivElement>('[data-element="table-row"]');
@@ -115,6 +210,7 @@ const renderTable = (
   let even = false;
 
   const sortedDataRecords = sortData(dataRecords, sortByField, sortOrder);
+  //console.log(sortedDataRecords);
 
   for (const key in sortedDataRecords) {
     if (sortedDataRecords.hasOwnProperty(key)) {
@@ -149,6 +245,9 @@ const createRow = (rowTemplate: HTMLDivElement, rowData: any, colHeaders: string
     const newTableCell = tableCell.cloneNode(true) as HTMLDivElement;
     newTableCell.setAttribute('data-element', value);
     newTableCell.textContent = rowData[value];
+    if (value === 'Internal' || value === 'Land') {
+      newTableCell.innerHTML = rowData[value] + 'm <sup>2</sup>';
+    }
     tableCellContainer.append(newTableCell);
   });
   newItem.append(tableCellContainer);
@@ -165,8 +264,8 @@ const sortData = (data: any, sortByField: string, sortOrder: string) => {
   if (!sortType) return;
   const sortedData = data.slice(0);
   if (sortType === 'number') {
-    console.log('number');
-    console.log(data);
+    //console.log('number');
+    //console.log(data);
     sortedData.sort(function (a: any, b: any) {
       let rValue;
       if (sortOrder === 'desc') {
@@ -178,7 +277,7 @@ const sortData = (data: any, sortByField: string, sortOrder: string) => {
     });
     //console.log('by date:');
   } else if (sortType === 'string' || sortType === 'Default') {
-    console.log('string');
+    //console.log('string');
     sortedData.sort(function (a: any, b: any) {
       const x = a.fields[sortByField].toLowerCase();
       const y = b.fields[sortByField].toLowerCase();
