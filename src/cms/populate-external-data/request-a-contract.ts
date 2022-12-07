@@ -25,9 +25,13 @@ buyingEntityTypeSelect?.addEventListener('change', (e: Event) => {
 });
 
 // Get available listings
-const properties: string[] = [];
-document.querySelectorAll('.property-list-item').forEach((value: Element) => {
-  if (value.textContent) properties.push(value.textContent);
+const properties: object[] = [];
+document.querySelectorAll('[data-element="listing-item"]').forEach((value: Element) => {
+  const listingAddress = value.querySelector('[data-element="listing-address"]')?.textContent;
+  const listingAirtable = value.querySelector('[data-element="listing-airtable"]')?.textContent;
+  const property = { address: listingAddress, airtable: listingAirtable };
+
+  if (property) properties.push(property);
 });
 //console.log(properties)
 // Create autoComplete instance
@@ -35,6 +39,7 @@ const autoCompleteJS = new autoComplete({
   placeHolder: 'Search for listing...',
   data: {
     src: properties,
+    keys: ['address'],
     cache: true,
   },
   resultItem: {
@@ -52,8 +57,15 @@ const autoCompleteJS = new autoComplete({
 
 // User selected a value
 document.querySelector('#autoComplete')?.addEventListener('selection', function (event) {
-  // "event.detail" carries the autoComplete.js "feedback" object
-  const tableName = event.detail.selection.value;
+  const feedback = event.detail;
+  autoCompleteJS.input.blur();
+  // Prepare User's Selected Value
+  const selection = feedback.selection.value[feedback.selection.key];
+  // Replace Input value with the selected value
+  autoCompleteJS.input.value = selection;
+  // Console log autoComplete data feedback
+  const tableName = feedback.selection.value['airtable'];
+
   getPropertyData(tableName).then((data) => processData(data));
 });
 
@@ -102,7 +114,7 @@ const processData = (data: any) => {
   });
   dataUnits.sort(naturalCompare);
 
-  console.log(dataUnits);
+  //console.log(dataUnits);
   dataUnits.forEach((unit) => {
     const newOption = document.createElement('option');
     newOption.text = unit + '';
