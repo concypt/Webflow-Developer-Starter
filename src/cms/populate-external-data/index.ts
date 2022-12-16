@@ -150,6 +150,21 @@ window.fsAttributes.push([
       listInstance.clearItems();
       listInstance.addItems(changedListItems);
     };
+
+    document.addEventListener('click', (ev) => {
+      const clickedElement = ev.target as HTMLElement;
+
+      if (!clickedElement) return;
+
+      if (clickedElement.classList.contains('checkbox-select-wrapper')) {
+        showRadioOptions(clickedElement as HTMLDivElement);
+      } else if (clickedElement.classList.contains('checkbox-select-text')) {
+        showRadioOptions(clickedElement.parentElement as HTMLDivElement);
+      } else {
+        hideRadioOptions();
+      }
+    });
+    //radio select - end
   },
 ]);
 /**
@@ -225,9 +240,12 @@ const createFilter = (selectOption: string, templateElement: HTMLOptionElement) 
   const newFilter = templateElement.cloneNode(true) as HTMLOptionElement;
 
   // Populate inner elements
-  newFilter.textContent = selectOption;
   newFilter.value = selectOption;
 
+  if (selectOption.charAt(0) !== 'Q') {
+    selectOption = '$' + numberWithCommas(selectOption);
+  }
+  newFilter.textContent = selectOption;
   return newFilter;
 };
 
@@ -277,7 +295,7 @@ const populateOptions = (dropDownElement: HTMLSelectElement, dropDownOptions: st
   dropDownOptions.forEach((string) => {
     !finalDropDownOptions.includes(string) && finalDropDownOptions.push(string);
   });
-
+  console.log(finalDropDownOptions);
   for (const dropDownOption of finalDropDownOptions) {
     const newFilter = createFilter(dropDownOption, filtersOptionTemplateElement);
     if (!newFilter) continue;
@@ -398,4 +416,68 @@ const createCheckboxesFilter = (option: number, templateElement: HTMLLabelElemen
   check.value = option.toString();
 
   return newCheckbox;
+};
+
+const showRadioOptions = (element: HTMLDivElement) => {
+  const { parentElement } = element;
+  //console.log(parentElement?.innerHTML);
+
+  const optionsElement = parentElement?.querySelector(
+    '[data-element="radio-options"]'
+  ) as HTMLDivElement;
+
+  if (optionsElement.classList.contains('hide')) {
+    optionsElement.classList.remove('hide');
+    element.classList.add('enabled');
+  } else {
+    hideRadioOptions();
+  }
+};
+
+const hideRadioOptions = () => {
+  document.querySelectorAll('[data-element="radio-options"]').forEach((value) => {
+    value.classList.add('hide');
+  });
+  document.querySelectorAll('.checkbox-select-wrapper').forEach((value) => {
+    value.classList.remove('enabled');
+  });
+  updateRadioSelectText();
+};
+
+const updateRadioSelectText = async () => {
+  await delay(100);
+  const radioSelectWrapper = document.querySelectorAll('[data-element="radio-select-wrapper"]');
+  if (!radioSelectWrapper) return;
+
+  radioSelectWrapper.forEach((radioSelectWrapper) => {
+    const radioSelectText = radioSelectWrapper.querySelector('[data-element="radio-select-text"]');
+    if (!radioSelectText) return;
+
+    const radioSelectCaption = radioSelectWrapper.querySelector('.im-label strong')?.textContent;
+    if (!radioSelectCaption) return;
+
+    const radioDefaultText = 'All ' + radioSelectCaption;
+
+    let thisEnabledOptions = '';
+
+    radioSelectWrapper.querySelectorAll('.fs-cmsfilter_active').forEach((activeRadio) => {
+      thisEnabledOptions += activeRadio.querySelector('.w-form-label')?.textContent;
+      thisEnabledOptions += ', ';
+    });
+
+    thisEnabledOptions = thisEnabledOptions.trim();
+    const optionsLength = thisEnabledOptions.length;
+
+    if (optionsLength > 0) {
+      radioSelectText.textContent = thisEnabledOptions.substring(0, optionsLength - 1);
+    } else {
+      radioSelectText.textContent = radioDefaultText;
+    }
+  });
+};
+
+const delay = (ms: any) => new Promise((res) => setTimeout(res, ms));
+
+const numberWithCommas = (x: string | number) => {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 };

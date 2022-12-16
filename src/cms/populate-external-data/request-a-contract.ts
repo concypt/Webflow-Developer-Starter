@@ -2,6 +2,10 @@
 declare const autoComplete: any;
 declare const AddyComplete: any;
 
+//memberstack stuff goes here
+//console.log('ppapi chooooolo');
+//memberstack stuff ends here
+
 // Show / Hide Purchaser 2 based on Joint or Singl
 const purchaserSelect = document.querySelector('[data-element="Purchaser"]');
 purchaserSelect?.addEventListener('change', (e: Event) => {
@@ -261,16 +265,21 @@ function numberWithCommas(x: string | number) {
 }
 
 function naturalCompare(a, b) {
-  var ax = [], bx = [];
+  const ax = [],
+    bx = [];
 
-  a.replace(/(\d+)|(\D+)/g, function(_, $1, $2) { ax.push([$1 || Infinity, $2 || ""]) });
-  b.replace(/(\d+)|(\D+)/g, function(_, $1, $2) { bx.push([$1 || Infinity, $2 || ""]) });
-  
-  while(ax.length && bx.length) {
-      var an = ax.shift();
-      var bn = bx.shift();
-      var nn = (an[0] - bn[0]) || an[1].localeCompare(bn[1]);
-      if(nn) return nn;
+  a.replace(/(\d+)|(\D+)/g, function (_, $1, $2) {
+    ax.push([$1 || Infinity, $2 || '']);
+  });
+  b.replace(/(\d+)|(\D+)/g, function (_, $1, $2) {
+    bx.push([$1 || Infinity, $2 || '']);
+  });
+
+  while (ax.length && bx.length) {
+    const an = ax.shift();
+    const bn = bx.shift();
+    const nn = an[0] - bn[0] || an[1].localeCompare(bn[1]);
+    if (nn) return nn;
   }
 
   return ax.length - bx.length;
