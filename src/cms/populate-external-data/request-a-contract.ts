@@ -73,6 +73,38 @@ document.querySelector('#autoComplete')?.addEventListener('selection', function 
   getPropertyData(tableName).then((data) => processData(data));
 });
 
+// Second autoComplte for agent selection
+// Get available agents
+const agents: string[] = [];
+document.querySelectorAll('[data-element="agent-item"]').forEach((value: Element) => {
+  const agentFullName =
+    value.querySelector('[data-element="agent-first-name"]')?.textContent +
+    ' ' +
+    value.querySelector('[data-element="agent-last-name"]')?.textContent;
+
+  if (agentFullName) agents.push(agentFullName);
+});
+
+const autoCompleteJSAgents = new autoComplete({
+  selector: '#Purchaser-Agent',
+  placeHolder: 'Search for Agents...',
+  data: {
+    src: agents,
+    cache: true,
+  },
+  resultItem: {
+    highlight: true,
+  },
+  events: {
+    input: {
+      selection: (event: any) => {
+        const selection = event.detail.selection.value;
+        autoCompleteJSAgents.input.value = selection;
+      },
+    },
+  },
+});
+
 // Load required Airtable
 async function getPropertyData(tableName: string) {
   const tableURL =
@@ -100,6 +132,7 @@ const processData = (data: any) => {
   //Unit string to Unit integer in data
   const dataUnits: string[] = [];
 
+  if (!dataRecords) return;
   dataRecords.forEach((obj: any) => {
     const newText =
       'Unit ' +
@@ -193,7 +226,7 @@ const renderRadio = (
       valuElement.querySelector('[data-element="' + radioType + ' Email"]')?.textContent +
       ' / ' +
       valuElement.querySelector('[data-element="' + radioType + ' Phone"]')?.textContent +
-      ' )';
+      ') ';
     const radioValue =
       valuElement.querySelector('[data-element="' + radioType + ' Location"]')?.textContent +
       ': ' +
@@ -284,3 +317,23 @@ function naturalCompare(a, b) {
 
   return ax.length - bx.length;
 }
+
+//document ready
+$(() => {
+  const params = new Proxy(new URLSearchParams(window.location.search), {
+    get: (searchParams, prop) => searchParams.get(prop),
+  });
+  // Get the value of "some_key" in eg "https://example.com/?some_key=some_value"
+  const value = params.address; // "some_value"
+  const inputAddress = document.querySelector('[data-element="Listing"]');
+  (inputAddress as HTMLInputElement).value = value;
+  let tableName = '';
+  properties.forEach((property) => {
+    if (property.address === value) {
+      tableName = property.airtable;
+    }
+  });
+  if (tableName) {
+    getPropertyData(tableName).then((data) => processData(data));
+  }
+});

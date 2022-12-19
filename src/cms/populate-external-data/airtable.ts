@@ -1,7 +1,6 @@
 //const tableName = encodeURI('24 Devonport lane - growcott freer');
 import { removeChildElements } from "@finsweet/ts-utils";
-console.log('doc');
-
+console.log('loval');
 //script for protecting the page
 const memberstack = window.$memberstackDom;
 const thisListing = window.location.href.split('/').pop();
@@ -259,13 +258,12 @@ const sortData = (data: any, sortByField: string, sortOrder: string) => {
     return data;
   }
   //console.log(data);
-  // use slice() to copy the array and not just make a reference
+  //use slice() to copy the array and not just make a reference
   const sortType: string = typeof data[0].fields[sortByField];
   if (!sortType) return;
   const sortedData = data.slice(0);
   if (sortType === 'number') {
-    //console.log('number');
-    //console.log(data);
+
     sortedData.sort(function (a: any, b: any) {
       let rValue;
       if (sortOrder === 'desc') {
@@ -298,3 +296,15 @@ const sortData = (data: any, sortByField: string, sortOrder: string) => {
 function numberWithCommas(x: string | number) {
   return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
+
+// Script for request a contract
+document
+  .querySelector<HTMLLinkElement>('#btn-request-a-contract')
+  ?.addEventListener('click', (e) => {
+    e.preventDefault();
+    const propertyAddress = document.querySelector('[data-element="address"]')?.textContent;
+    if (!propertyAddress) return;
+    const baseURL = '/request-a-contract?address=' + encodeURIComponent(propertyAddress);
+    window.location.href = baseURL;
+  });
+// end script request a contract
